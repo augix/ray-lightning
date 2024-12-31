@@ -1,6 +1,12 @@
 # minimum pytorch example
 fn_data = 'iris_data.csv'
+max_epochs = 10
+lr = 0.01
+batch_size = 2
+cpu_workers = 10
+val_frac = 0.2
 
+# -------------------------------------------------
 import numpy as np
 import torch as T
 device = T.device("cuda:0")  # use GPU
@@ -16,9 +22,8 @@ def main():
   print("\nBegin minimal PyTorch Iris demo ")  
   print("\nCreating IrisDataset for train data ")
   train_ds = IrisDataset(fn_data)
-  bat_size = 2
   train_ldr = T.utils.data.DataLoader(train_ds,
-    batch_size=bat_size, shuffle=True)
+    batch_size=batch_size, shuffle=True)
 
 # -------------------------------------------------
 
@@ -27,23 +32,24 @@ def main():
   net = Net().to(device)    # or Sequential()
 
   # 3. train model
-  max_epochs = 100
-  lrn_rate = 0.04
   loss_func = T.nn.CrossEntropyLoss()  # applies log-softmax()
-  optimizer = T.optim.SGD(net.parameters(),
-    lr=lrn_rate)
+  optimizer = T.optim.Adam(net.parameters(),
+    lr=lr)
 
   print("\nStarting training")
   net = net.train()
   for epoch in range(0, max_epochs):
+    loss_epoch = []
     for (batch_idx, batch) in enumerate(train_ldr):
       X = batch[0].to(device)
       Y = batch[1].to(device)
       optimizer.zero_grad()
       oupt = net(X)
-      loss_val = loss_func(oupt, Y)  # a tensor
-      loss_val.backward()
+      loss = loss_func(oupt, Y)  # a tensor
+      loss.backward()
       optimizer.step()
+      loss_epoch.append(loss.item())
+    print(f"epoch: {epoch}, mean loss: {np.mean(loss_epoch)}")
 
     # TODO: monitor error
   print("Done training")

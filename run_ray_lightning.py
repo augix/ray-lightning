@@ -1,47 +1,40 @@
+# minimum ray + pytorch lightning example
+
+fn_data = 'iris_data.csv'
+max_epochs = 10
+lr = 0.01
+batch_size = 2
+cpu_workers = 10
+gpu_workers = 2
+val_frac = 0.2
+
+# -------------------------------------------------
+
 import os
-
-import torch
-import lightning.pytorch as pl
-
+import lightning.pytorch as L
 import ray.train.lightning
 from ray.train.torch import TorchTrainer
+# -------------------------------------------------
 
 # Model, Loss, Optimizer
 from model import Net
-class IrisClassifier(pl.LightningModule):
-    def __init__(self):
-        super(IrisClassifier, self).__init__()
-        self.model = Net()
-        self.criterion = torch.nn.CrossEntropyLoss()
-
-    def forward(self, x):
-        return self.model(x)
-
-    def training_step(self, batch, batch_idx):
-        x, y = batch
-        outputs = self.forward(x)
-        loss = self.criterion(outputs, y)
-        self.log("loss", loss, on_step=True, prog_bar=True)
-        return loss
-
-    def configure_optimizers(self):
-        return torch.optim.Adam(self.model.parameters(), lr=0.001)
+from run_lightning import IrisClassifier
+# -------------------------------------------------
 
 wd = os.getcwd()
 def train_func():
     os.chdir(wd)
     # Data
-    fn_iris = 'iris_data.csv'
     from run_lightning import theDataModule
-    dm = theDataModule(fn_iris)
+    dm = theDataModule(fn_data, batch_size, cpu_workers, val_frac)
     dm.setup(stage='fit')
     train_loader = dm.train_dataloader()
 
     # Training
-    model = IrisClassifier()
+    model = IrisClassifier(Net())
     # [1] Configure PyTorch Lightning Trainer.
-    trainer = pl.Trainer(
-        max_epochs=10,
+    trainer = L.Trainer(
+        max_epochs=max_epochs,
         devices="auto",
         accelerator="auto",
         strategy=ray.train.lightning.RayDDPStrategy(),
@@ -54,8 +47,10 @@ def train_func():
     trainer = ray.train.lightning.prepare_trainer(trainer)
     trainer.fit(model, train_dataloaders=train_loader)
 
+# -------------------------------------------------
+
 # [2] Configure scaling and resource requirements.
-scaling_config = ray.train.ScalingConfig(num_workers=2, use_gpu=True)
+scaling_config = ray.train.ScalingConfig(num_workers=gpu_workers, use_gpu=True)
 
 # [3] Launch distributed training job.
 trainer = TorchTrainer(
