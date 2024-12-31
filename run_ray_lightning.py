@@ -1,12 +1,6 @@
 # minimum ray + pytorch lightning example
 
-fn_data = 'iris_data.csv'
-max_epochs = 10
-lr = 0.01
-batch_size = 2
-cpu_workers = 10
-gpu_workers = 2
-val_frac = 0.2
+from config import config
 
 # -------------------------------------------------
 
@@ -26,15 +20,15 @@ def train_func():
     os.chdir(wd)
     # Data
     from pl_data import theDataModule
-    dm = theDataModule(fn_data, batch_size, cpu_workers, val_frac)
+    dm = theDataModule(config.fn_data, config.batch_size, config.cpu_workers, config.val_frac)
     dm.setup(stage='fit')
     train_loader = dm.train_dataloader()
 
     # Training
-    model = IrisClassifier(Net(), lr)
+    model = IrisClassifier(Net(), config.lr)
     # [1] Configure PyTorch Lightning Trainer.
     trainer = L.Trainer(
-        max_epochs=max_epochs,
+        max_epochs=config.max_epochs,
         devices="auto",
         accelerator="auto",
         strategy=ray.train.lightning.RayDDPStrategy(),
@@ -50,7 +44,7 @@ def train_func():
 # -------------------------------------------------
 
 # [2] Configure scaling and resource requirements.
-scaling_config = ray.train.ScalingConfig(num_workers=gpu_workers, use_gpu=True)
+scaling_config = ray.train.ScalingConfig(num_workers=config.gpu_workers, use_gpu=True)
 
 # [3] Launch distributed training job.
 trainer = TorchTrainer(

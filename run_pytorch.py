@@ -1,10 +1,5 @@
 # minimum pytorch example
-fn_data = 'iris_data.csv'
-max_epochs = 10
-lr = 0.01
-batch_size = 2
-cpu_workers = 10
-val_frac = 0.2
+from config import config
 
 # -------------------------------------------------
 import numpy as np
@@ -21,9 +16,9 @@ def main():
   # 0. get started
   print("\nBegin minimal PyTorch Iris demo ")  
   print("\nCreating IrisDataset for train data ")
-  train_ds = IrisDataset(fn_data)
+  train_ds = IrisDataset(config.fn_data)
   train_ldr = T.utils.data.DataLoader(train_ds,
-    batch_size=batch_size, shuffle=True)
+    batch_size=config.batch_size, shuffle=True)
 
 # -------------------------------------------------
 
@@ -34,11 +29,11 @@ def main():
   # 3. train model
   loss_func = T.nn.CrossEntropyLoss()  # applies log-softmax()
   optimizer = T.optim.Adam(net.parameters(),
-    lr=lr)
+    lr=config.lr)
 
   print("\nStarting training")
   net = net.train()
-  for epoch in range(0, max_epochs):
+  for epoch in range(0, config.max_epochs):
     loss_epoch = []
     for (batch_idx, batch) in enumerate(train_ldr):
       X = batch[0].to(device)
