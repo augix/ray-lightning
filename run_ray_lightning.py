@@ -18,20 +18,20 @@ from ray.train.torch import TorchTrainer
 
 # Model, Loss, Optimizer
 from model import Net
-from run_lightning import IrisClassifier
+from pl_model import IrisClassifier
 # -------------------------------------------------
 
 wd = os.getcwd()
 def train_func():
     os.chdir(wd)
     # Data
-    from run_lightning import theDataModule
+    from pl_data import theDataModule
     dm = theDataModule(fn_data, batch_size, cpu_workers, val_frac)
     dm.setup(stage='fit')
     train_loader = dm.train_dataloader()
 
     # Training
-    model = IrisClassifier(Net())
+    model = IrisClassifier(Net(), lr)
     # [1] Configure PyTorch Lightning Trainer.
     trainer = L.Trainer(
         max_epochs=max_epochs,
